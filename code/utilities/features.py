@@ -194,7 +194,9 @@ def mfccInitFilterBanks(fs, nfft):
     heights = 2./(freqs[2:] - freqs[0:-2])
 
     # Compute filterbank coeff (in fft domain, in bins)
-    fbank = numpy.zeros((nFiltTotal, nfft))
+    # print(nFiltTotal)
+    # print(nfft)
+    fbank = numpy.zeros((int(nFiltTotal), int(nfft)))
     nfreqs = numpy.arange(nfft) / (1. * nfft) * fs
 
     for i in range(nFiltTotal):
@@ -233,7 +235,7 @@ def stChromaFeaturesInit(nfft, fs):
     """
     This function initializes the chroma matrices used in the calculation of the chroma features
     """
-    freqs = numpy.array([((f + 1) * fs) / (2 * nfft) for f in range(nfft)])
+    freqs = numpy.array([((f + 1) * fs) / (2 * nfft) for f in range(int(nfft))])
     Cp = 27.50
 
     nChroma = numpy.round(12.0 * numpy.log2(freqs / Cp)).astype(int)
@@ -260,7 +262,7 @@ def stChromaFeatures(X, fs, nChroma, nFreqsPerChroma):
     newD = int(numpy.ceil(C.shape[0] / 12.0) * 12)
     C2 = numpy.zeros((newD, ))
     C2[0:C.shape[0]] = C
-    C2 = C2.reshape(C2.shape[0]/12, 12)
+    C2 = C2.reshape(int(C2.shape[0]/12), 12)
     #for i in range(12):
     #    finalC[i] = numpy.sum(C[i:C.shape[0]:12])
     finalC = numpy.matrix(numpy.sum(C2, axis=0)).T
@@ -554,7 +556,8 @@ def stFeatureExtraction(signal, Fs, Win, Step):
             peaks = p[3][0:1, :].T * 1.e-3
         curPos = curPos + Step                           # update window position
         X = abs(fft(x))                                  # get fft magnitude
-        X = X[0:nFFT]                                    # normalize fft
+        # print(int(nFFT))
+        X = X[0:int(nFFT)]                                    # normalize fft
         X = X / len(X)
         if countFrames == 1:
             Xprev = X.copy()                             # keep previous fft mag (used in spectral flux)

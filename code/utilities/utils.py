@@ -19,10 +19,17 @@ import calculate_features as calc_feat
 class Constants:
     def __init__(self):
         real_path = os.path.dirname(os.path.realpath(__file__))
+        # print(real_path)
         self.available_emotions = np.array(['ang', 'exc', 'neu', 'sad'])
-        self.path_to_data = real_path + "/../../data/sessions/"
-        self.path_to_features = real_path + "/../../data/features/"
-        self.sessions = ['Session1', 'Session2', 'Session3', 'Session4', 'Session5']
+#         self.path_to_data = real_path + "\..\..\data\sessions\\"
+        self.path_to_data = os.path.join(real_path, '..', '..', 'data','sessions')
+        # os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', 'templates'))
+        # self.path_to_data = "C:\\Users\\gabri\\Documents\Deeplearning\somegit\emotion_recognition-mast\\data\\sessions\\"
+   #     self.path_to_features = real_path + "\\..\\..\\data\\features\\"
+        # self.path_to_features = "C:\\Users\\gabri\\Documents\\Deeplearning\\somegit\\emotion_recognition-mast\\data\\features\\"
+        self.path_to_features = os.path.join(real_path, '..','..', 'data', 'features')
+        # self.sessions = ['Session1', 'Session2', 'Session3', 'Session4', 'Session5']
+        self.sessions = ['Session1']
         self.conf_matrix_prefix = 'iemocap'
         self.framerate = 16000
         self.types = {1: np.int8, 2: np.int16, 4: np.int32}
@@ -53,7 +60,8 @@ class Constants:
 
 
 def get_audio(path_to_wav, filename, params=Constants()):
-    wav = wave.open(path_to_wav + filename, mode="r")
+    # print('Opening: ',os.path.join(path_to_wav , filename) )
+    wav = wave.open(os.path.join(path_to_wav , filename), mode="r")
     (nchannels, sampwidth, framerate, nframes, comptype, compname) = wav.getparams()
     content = wav.readframes(nframes)
     samples = np.fromstring(content, dtype=params.types[sampwidth])
@@ -75,7 +83,8 @@ def get_transcriptions(path_to_transcriptions, filename, params=Constants()):
 
 
 def get_emotions(path_to_emotions, filename, params=Constants()):
-    f = open(path_to_emotions + filename, 'r').read()
+
+    f = open(os.path.join(path_to_emotions, filename), 'r').read()
     f = np.array(f.split('\n'))
     idx = f == ''
     idx_n = np.arange(len(f))[idx]
@@ -108,7 +117,7 @@ def get_emotions(path_to_emotions, filename, params=Constants()):
                 idx = head.find(";", start_idx)
             emos.append(evoluator_emo)
             j += 1
-
+        # print(emotion)
         emotion.append({'start': start_time,
                         'end': end_time,
                         'id': filename[:-4] + '_' + actor_id,
@@ -141,25 +150,76 @@ def split_wav(wav, emotions, params=Constants()):
 def read_iemocap_data(params=Constants()):
     data = []
     for session in params.sessions:
-        path_to_wav = params.path_to_data + session + '/dialog/wav/'
-        path_to_emotions = params.path_to_data + session + '/dialog/EmoEvaluation/'
-        path_to_transcriptions = params.path_to_data + session + '/dialog/transcriptions/'
+        path_to_wav = os.path.join(params.path_to_data, session, 'audio')
+        # path_to_wav = params.path_to_data + session + '//audio//'
+        path_to_emotion = os.path.join(params.path_to_data, session, 'emo_evaluation')
+        # path_to_emotions = params.path_to_data + session + '\\emo_evaluation\\'
+        path_to_transcriptions = os.path.join(params.path_to_data, session, 'dialog', 'transcriptions')
+        # path_to_transcriptions = params.path_to_data + session + '/dialog/transcriptions/'
 
         files = os.listdir(path_to_wav)
-        files = [f[:-4] for f in files if f.endswith(".wav")]
-        for f in files:           
-            wav = get_audio(path_to_wav, f + '.wav')
-            transcriptions = get_transcriptions(path_to_transcriptions, f + '.txt')
-            emotions = get_emotions(path_to_emotions, f + '.txt')
-            sample = split_wav(wav, emotions)
-
+        # print(files)
+        # print(files)
+        
+        
+        #print('hellow world')
+        # for subdir, direc, files in os.walk(path_to_emotion):
+            # print(path_to_wav)
+            # print(files)
+            # files = [f[:-4] for f in files if f.endswith(".txt")]
+        for f in files:
+            if f[0] == '.':
+                print('nope')
+                continue
+            emotions = get_emotions(path_to_emotion, f + '.txt')
+            # print(emotions)
             for ie, e in enumerate(emotions):
-                e['signal'] = sample[ie]['left']
-                e.pop("left", None)
-                e.pop("right", None)
-                e['transcription'] = transcriptions[e['id']]
+                wav = get_audio(os.path.join(path_to_wav, f), e['id'] + '.wav')
+                (nchannels, sampwidth, framerate, nframes, comptype, compname), samples = wav
+                e['signal'] = samples[0::nchannels]
+                print(e['signal'])
+                # e['right'] = samples[1::nchannels]
+                # print('Added sound  to emotion')
                 if e['emotion'] in params.available_emotions:
                     data.append(e)
+                    print('appending!')
+                    # data.append(e)
+    # left = samples[0::nchannels]
+    # right = samples[1::nchannels]
+
+    # frames = []
+    # for ie, e in enumerate(emotions):
+    #     start = e['start']
+    #     end = e['end']
+
+    #     e['right'] = right[int(start * framerate):int(end * framerate)]
+    #     e['left'] = left[int(start * framerate):int(end * framerate)]
+
+    #     frames.append({'left': e['left'], 'right': e['right']})
+
+            
+   
+
+                # print(file)
+        # for f in files:    
+                # print(subdir)       
+                # print(subdir, f + '.wav')
+                # wav = get_audio(subdir, f + '.wav')
+                # transcriptions = []
+                # # transcriptions = get_transcriptions(path_to_transcriptions, f + '.txt')
+                # f = f[:-5]
+                # # print(direc)
+                
+
+                # sample = split_wav(wav, emotions)
+
+                # for ie, e in enumerate(emotions):
+                    # e['signal'] = sample[ie]['left']
+                    # e.pop("left", None)
+                    # e.pop("right", None)
+                    # # e['transcription'] = transcriptions[e['id']]
+                    # if e['emotion'] in params.available_emotions:
+                    #     data.append(e)
     sort_key = get_field(data, "id")
     return np.array(data)[np.argsort(sort_key)]
 
