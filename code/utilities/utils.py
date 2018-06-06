@@ -28,8 +28,8 @@ class Constants:
    #     self.path_to_features = real_path + "\\..\\..\\data\\features\\"
         # self.path_to_features = "C:\\Users\\gabri\\Documents\\Deeplearning\\somegit\\emotion_recognition-mast\\data\\features\\"
         self.path_to_features = os.path.join(real_path, '..','..', 'data', 'features')
-        # self.sessions = ['Session1', 'Session2', 'Session3', 'Session4', 'Session5']
-        self.sessions = ['Session1']
+        self.sessions = ['Session1', 'Session2', 'Session3', 'Session4', 'Session5']
+        # self.sessions = ['Session1']
         self.conf_matrix_prefix = 'iemocap'
         self.framerate = 16000
         self.types = {1: np.int8, 2: np.int16, 4: np.int32}
@@ -253,7 +253,7 @@ def get_features(data, params=Constants()):
                 excluded += 1
         x = np.array(x, dtype=float)
         y = np.array(y)
-        save_sample(x, y, params.path_to_features + d['id'] + '.csv')
+        save_sample(x, y, os.path.join(params.path_to_features,  d['id'] + '.csv'))
     return overall, excluded
 
 
@@ -285,10 +285,57 @@ def load_sample(name):
         x = []
         y = []
         for row in r:
-            x.append(row[:-1])
-            y.append(row[-1])
+            if row != []:
+                # print(row[:-1])
+                x.append(row[:-1])
+                y.append(row[-1])
     return np.array(x, dtype=float), np.array(y)
 
+def get_all_samples(gender, params=Constants()):
+    files = os.listdir(params.path_to_features)
+    files = [f[:-4] for f in files if f.endswith(".csv")]
+    print(len(files))
+    file_s = [f[4:5] for f in files]
+    file_g = [f[-4:-3] for f in files]
+    test1_idx = [f == '5' for f in file_s]
+    train1_idx = [f == '1' or f == '2' or f == '3' for f in file_s]
+    val1_idx = [f == '4' for f in file_s]
+    genderMask = [f == gender for f in file_g]
+    # test_x = files[test1_idx * genderMask]
+    # test_x = [i for indx,i in enumerate(files) if test1_idx[indx]]
+    test_x = []
+    test_y = []
+
+    train_x = []
+    train_y = []
+    
+    val_x = []
+    val_y = []
+    for i,f in enumerate(files):
+        x, y= load_sample(os.path.join(params.path_to_features, f+'.csv'))
+        if len(x) > 0:
+            if genderMask[i]:
+                if test1_idx[i]:
+                    test_x.append(np.array(x, dtype=float))
+                    test_y.append(y[0])
+                elif train1_idx[i]:
+                    train_x.append(np.array(x, dtype=float))
+                    train_y.append(y[0])
+                elif val1_idx[i]:
+                    val_x.append(np.array(x, dtype=float))
+                    val_y.append(y[0])
+
+
+    test_x = np.array(test_x)
+    test_y = np.array(test_y)
+
+    train_x = np.array(train_x)
+    train_y = np.array(train_y)
+    
+    val_x = np.array(val_x)
+    val_y = np.array(val_y)
+    
+    return test_x, test_y, train_x, train_y, val_x, val_y
 
 def get_sample(ids, take_all=False, params=Constants()):
     if take_all:
@@ -298,7 +345,7 @@ def get_sample(ids, take_all=False, params=Constants()):
     ty = []
     valid_ids = []
     for i in ids:
-        x, y = load_sample(params.path_to_features + i + '.csv')
+        x, y = load_sample(os.path.join(params.path_to_features,  i + '.csv'))
         if len(x) > 0:
             tx.append(np.array(x, dtype=float))
             ty.append(y[0])
